@@ -268,6 +268,12 @@ def main():
             if cf.exists():
                 cf.unlink()
 
+        logging.debug('Done.')
+
+    else:
+        logging.debug('No files to process')
+
+
 stage_dir = '/tmp/'
 NAS_dir = os.getenv('HB_NAS_BASE_FOLDER', None)
 pidnum = os.getpid()
@@ -290,7 +296,7 @@ log_file = '/tmp/transcode.pylarge.log'
 
 if __name__ == "__main__":
 
-    log_format = '%(asctime)s %(funcName)-12s %(levelname)-8s %(message)s'
+    log_format = '%(asctime)s %(levelname)-8s %(message)s'
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     formatter = logging.Formatter(log_format)

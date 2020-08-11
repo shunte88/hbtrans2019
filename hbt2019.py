@@ -96,7 +96,8 @@ def timedelta_fmt(delta):
 
 
 def sizeof_fmt(num, suffix='B'):
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+    # all the way to yotta, just for fun!!!
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi']:
         if abs(num) < 1024.0:
             return "%3.2f%s%s" % (num, unit, suffix)
         num /= 1024.0
@@ -196,12 +197,16 @@ def main():
             archive_file = unique_target(archive, basefolder, basefile)
             af = Path(archive_file)
 
+            # PITA NAS post power outage!!!
+            af.touch(mode=0o777, exist_ok=True)
+            af.touch(mode=0o777, exist_ok=True)
+            #####af.chmod(0o777)
+
             initsize = pf.stat().st_size
             track_height = 0
             track_width = 0
 
             media_info = MediaInfo.parse(file)
-
             for track in media_info.tracks:
                 if 'Video' == track.track_type:
                     track_height = int(track.height)
@@ -268,6 +273,15 @@ def main():
             if cf.exists():
                 cf.unlink()
 
+            # cleanup empty folders
+            '''
+            try:
+                folder.rmdir()
+                logging.debug('Cleanup empty folder', folder.name)
+            except:
+                pass
+            '''
+
         logging.debug('Done.')
 
     else:
@@ -289,7 +303,7 @@ else:
 # look for files older than specified window
 # needs, at minimum, validation around the base folders
 handbrake = os.getenv('HB_EXECUTABLE', '/usr/bin/HandBrakeCLI')
-window = int(os.getenv('HB_PROCESS_WINDOW', (18 * 60 * 60)))
+window = int(os.getenv('HB_PROCESS_WINDOW', (4 * 60 * 60)))
 myth_video = os.getenv('HB_MYTH_BASE_LOCAL_FOLDER', None)
 cutoff = int(os.getenv('HB_CUTOFF_HOUR', 22))
 log_file = '/tmp/transcode.pylarge.log'

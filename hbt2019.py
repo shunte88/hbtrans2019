@@ -43,7 +43,7 @@ def push_note(note, pb=None):
     global hostname
     # push bullet status
     if pb is not None:
-        title = '%s::%s' % (hostname, note)
+        title = f'{hostname}::{note}'
         pb.push_note(title, '')
 
 
@@ -78,17 +78,17 @@ def timedelta_fmt(delta):
 
     ret = ''
     if 0 != hours:
-        ret = '%d hours' % hours
+        ret = f'{hours} hours'
     if 0 != minutes:
-        minutes = '%d minutes' % minutes
+        minutes = f'{minutes} minutes'
         if '' != ret:
-            ret += ', %s' % minutes
+            ret += f', {minutes}'
         else:
             ret = minutes
     if 0 != seconds:
-        seconds = '%d seconds' % seconds
+        seconds = f'{seconds} seconds'
         if '' != ret:
-            ret += ' and %s' % seconds
+            ret += f' and {seconds}'
         else:
             ret = seconds
 
@@ -114,16 +114,12 @@ def pluralize(i):
 def unique_target(archive, basefolder, basefile):
     uindex = 1
 
-    folder = '%s/%s' % (archive,
-                        basefolder)
+    folder = f'{archive}/{basefolder}'
     Path(folder).mkdir(parents=True, exist_ok=True)
 
-    filename = '%s/%s.mkv' % (folder,
-                              basefile)
+    filename = f'{folder}/{basefile}.mkv'
     while Path(filename).exists():
-        filename = '%s/%s-%d.mkv' % (folder,
-                                     basefile,
-                                     uindex)
+        filename = f'{folder}/{basefile}-{uindex}.mkv'
         uindex += 1
 
     return filename
@@ -197,10 +193,11 @@ def main():
             archive_file = unique_target(archive, basefolder, basefile)
             af = Path(archive_file)
 
-            # PITA NAS post power outage!!!
-            af.touch(mode=0o777, exist_ok=True)
-            af.touch(mode=0o777, exist_ok=True)
-            #####af.chmod(0o777)
+            if 0==insitu_process:
+                # PITA NAS post power outage!!!
+                af.touch(mode=0o777, exist_ok=True)
+                af.touch(mode=0o777, exist_ok=True)
+                #####af.chmod(0o777)
 
             initsize = pf.stat().st_size
             track_height = 0
@@ -237,7 +234,7 @@ def main():
 
             if run_command(muxcmd, 1):
 
-                if af.exists():
+                if af.exists() and af.stat().st_size>0:
 
                     tagcmd = 'mkvpropedit "%s" --edit info ' % archive_file
                     tagcmd += '--set "title=%s" 2> /dev/null' % title
@@ -273,32 +270,29 @@ def main():
             if cf.exists():
                 cf.unlink()
 
-            # cleanup empty folders
-            '''
-            try:
-                folder.rmdir()
-                logging.debug('Cleanup empty folder', folder.name)
-            except:
-                pass
-            '''
+            # cleanup empty folders is performed by external process
 
         logging.debug('Done.')
 
     else:
         logging.debug('No files to process')
 
-
+insitu_process = os.getenv('HB_PROCESS_INSITU', 0)
 stage_dir = '/tmp/'
 NAS_dir = os.getenv('HB_NAS_BASE_FOLDER', None)
 pidnum = os.getpid()
 hostname = socket.gethostname()
 
-# dir provided may not be the true mount but a subdir thereof
-if is_on_mount(NAS_dir):
-    archive = NAS_dir+'/video/tv'
+if 0==insitu_process:
+    # dir provided may not be the true mount but a subdir thereof
+    if is_on_mount(NAS_dir):
+        archive = NAS_dir+'/video/tv'
+    else:
+        print('NAS does not appear to be mounted at', NAS_dir)
+        sys.exit(1)
 else:
-    print('NAS does not appear to be mounted at', NAS_dir)
-    sys.exit(1)
+    archive = '/data2/tv'
+
 
 # look for files older than specified window
 # needs, at minimum, validation around the base folders
